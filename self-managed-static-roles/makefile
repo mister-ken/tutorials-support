@@ -40,7 +40,7 @@ start-vault:
 	$(call header,$@)
 	@nohup sh -c "/Users/mrken/Documents/dev/github/hashicorp/vault-enterprise/bin/vault server -dev -dev-root-token-id root 1> /dev/null &"
 	@sleep 2
-operations
+
 .PHONY: start-postgres
 start-postgres:
 	$(call header,$@)

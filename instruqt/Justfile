@@ -1,0 +1,76 @@
+set shell := ["bash", "-c"]
+set positional-arguments
+
+default: all
+all: version build deploy check test clean
+clean-all: clean
+
+[group('aws')]
+version:
+    echo ">> running $0"
+    instruqt version
+
+[group('aws')]
+@build: clean
+    echo ">> running $0"
+    instruqt track create ## no arguements give choices, choose AWS cloud
+
+[group('aws')]
+@deploy:
+    echo ">> running $0"
+    instruqt track push
+
+[group('aws')]
+@check:
+    echo ">> running $0"
+    aws iam list-instance-profiles-for-role --role-name vault-agent-demo-vault-server-role | jq -r ".InstanceProfiles[0].InstanceProfileName"
+    aws iam list-instance-profiles-for-role --role-name vault-agent-demo-vault-client-role | jq -r ".InstanceProfiles[0].InstanceProfileName"
+
+[group('aws')]
+@test:
+    echo ">> running $0"
+    instruqt track test                                      
+
+[group('aws')]
+@open:
+    echo ">> running $0"
+    instruqt track open
+
+[group('aws')]
+@clean:
+    echo ">> running $0"
+    aws iam list-instance-profiles-for-role --role-name vault-agent-demo-vault-server-role | jq -r ".InstanceProfiles[0].InstanceProfileName"
+    aws iam list-instance-profiles-for-role --role-name vault-agent-demo-vault-client-role | jq -r ".InstanceProfiles[0].InstanceProfileName"
+    aws iam remove-role-from-instance-profile --instance-profile-name vault-agent-demo-vault-server-instance-profile --role-name vault-agent-demo-vault-server-role
+    aws iam remove-role-from-instance-profile --instance-profile-name vault-agent-demo-vault-client-instance-profile --role-name vault-agent-demo-vault-client-role
+
+    aws iam delete-role-policy --policy-name vault-agent-demo-vault-client-role-policy --role-name vault-agent-demo-vault-client-role
+    aws iam delete-role-policy --policy-name vault-agent-demo-vault-client-server-policy --role-name vault-agent-demo-vault-server-role
+
+    aws iam delete-role --role-name vault-agent-demo-vault-client-role
+    aws iam delete-role --role-name vault-agent-demo-vault-server-role
+    aws iam delete-instance-profile --instance-profile-name vault-agent-demo-vault-server-instance-profile
+    aws iam delete-instance-profile --instance-profile-name vault-agent-demo-vault-client-instance-profile
+    aws kms delete-alias --alias-name alias/vault-agent-demo-vault-kms-unseal-key
+
+[group('aws')]
+@get-ubuntu-ami:
+    echo ">> running $0"
+    echo {{datetime('%Y')}}
+    aws ec2 describe-images --owners amazon --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu*amd64*-{{datetime('%Y')}}*" --query 'sort_by(Images, &CreationDate)[].Name'
+
+[group('aws')]
+@create-ec2-key:
+    echo ">> running $0"
+    aws ec2 create-key-pair \
+        --key-name vault-key \
+        --key-type rsa \
+        --key-format pem \
+        --query "KeyMaterial" \
+        --output text > vault-key.pem
+
+[group('aws')]
+@delete-ec2-key:
+    echo ">> running $0"
+    aws ec2 delete-key-pair \
+    --key-name vault-key
