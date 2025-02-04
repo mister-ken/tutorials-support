@@ -1,0 +1,73 @@
+set shell := ["bash", "-c"]
+set positional-arguments
+# mod k8s
+# mod docker
+
+user := "danielle"
+pass := "test-pass"
+
+default: all
+all: version deploy check set-up test clean
+VA301397: version set-up check create-policy create-user
+
+
+[group('default')]
+@build:
+   echo ">> running $0"
+   #  pip install -r requirements.txt
+
+[group('VA301397')]
+@version:
+   echo ">> running $0"
+   vault version
+
+[group('VA301397')]
+@deploy:
+   echo ">> running $0"
+   nohup vault server -dev -dev-root-token-id root . > /dev/null 2>&1 &
+
+[group('VA301397')]
+check:
+   echo ">> running $0"
+   vault status
+   -lsof -P -i :8200
+   vault token lookup
+
+[group('VA301397')]
+@test:
+   echo ">> running $0"
+   vault read dev-team/data/creds
+
+[group('VA301397')]
+@set-up:
+   echo ">> running $0"
+   nohup vault server -dev -dev-root-token-id root . > /dev/null 2>&1 &
+   sleep 5
+   vault auth enable userpass
+   vault secrets enable -path=dev-team kv-v2
+   vault kv put dev-team/creds login=me password=ipass
+
+[group('VA301397')]
+@create-policy:
+   echo ">> running $0"
+   vault policy write developer-vault-policy developer-vault-policy.hcl 
+
+[group('VA301397')]
+@create-user user=("danielle") pass=("test-pass"):
+   echo ">> running $0"
+   vault write auth/userpass/users/{{user}} \
+        password={{pass}} \
+        policies=developer-vault-policy
+
+[group('VA301397')]
+@login-user user=("danielle") pass=("test-pass"):
+   echo ">> running $0"
+   vault login \
+      -method=userpass \
+      -token-only username={{user}} \
+      password={{pass}}
+
+[group('VA301397')]
+@clean:
+   echo ">> running $0"
+   pkill vault

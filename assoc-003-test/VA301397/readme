@@ -1,0 +1,45 @@
+There are three Vault policies for developers at your organization displayed in the Exhibit space.  
+ 
+There is already a KV-V2 secrets engine named dev-team created. 
+
+Once these policies are assigned to a new developer, what do the policies in the Exhibit space allow them to do?
+
+Create a secret named dev-team/creds.
+
+List secrets located at dev-team/creds.
+
+Read a secret at secret/data/dev-team/creds.
+
+Create secrets engines named creds.
+
+To test:
+
+1. just VA301397
+2. login
+   ```bash 
+   vault login \     
+   -method=userpass \
+   -token-only username=danielle \
+   password='test-pass'
+   ```
+3. use that token to reset the VAULT_TOKEN env variable.
+4. `vault token lookup` path should be `auth/userpass/login/danielle`
+5. read the secret at: 
+   ```bash
+   vault read dev-team/data/creds
+   Key         Value
+   ---         -----
+   data        map[login:me password:ipass]
+   metadata    map[created_time:2025-02-03T20:06:07.983322Z custom_metadata:<nil> deletion_time: destroyed:false version:1]
+   ```
+6. `vault read dev-team/creds` gives error
+   ```bash
+   vault read dev-team/creds            
+   Error reading dev-team/creds: Error making API request.
+
+   URL: GET http://127.0.0.1:8200/v1/dev-team/creds
+   Code: 403. Errors:
+
+   * 1 error occurred:
+         * permission denied
+   ```
