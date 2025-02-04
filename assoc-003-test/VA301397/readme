@@ -8,7 +8,7 @@ Create a secret named dev-team/creds.
 
 List secrets located at dev-team/creds.
 
-Read a secret at secret/data/dev-team/creds.
+Read a secret at dev-team/data/creds.
 
 Create secrets engines named creds.
 
@@ -31,15 +31,4 @@ To test:
    ---         -----
    data        map[login:me password:ipass]
    metadata    map[created_time:2025-02-03T20:06:07.983322Z custom_metadata:<nil> deletion_time: destroyed:false version:1]
-   ```
-6. `vault read dev-team/creds` gives error
-   ```bash
-   vault read dev-team/creds            
-   Error reading dev-team/creds: Error making API request.
-
-   URL: GET http://127.0.0.1:8200/v1/dev-team/creds
-   Code: 403. Errors:
-
-   * 1 error occurred:
-         * permission denied
    ```
