@@ -12,6 +12,11 @@ make
    ```
    $ vault server -dev -dev-root-token-id root -dev-plugin-dir=".../dev/github/hashicorp/vault-plugin-secrets-azure/bin/"
    ```
+   Note if the following is displayed during vault start up:
+   ```
+   The following dev plugins are registered in the catalog:
+    - vault-plugin-secrets-azure
+   ```
 1. config Azure SE
    ```
    $openssl dgst -sha256 /Users/mrken/Documents/dev/github/hashicorp/vault-plugin-secrets-azure/bin/vault-plugin-secrets-azure
