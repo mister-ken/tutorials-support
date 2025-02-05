@@ -1,0 +1,173 @@
+set shell := ["bash", "-c"]
+set positional-arguments
+# mod k8s
+# mod docker
+
+user := "danielle"
+pass := "test-pass"
+
+default: VA301389
+preqs: prerequisites ent-prerequisites
+all: preqs start-minikube version helm-set-up vault-set-up status test clean
+VA301389: version helm-set-up vault-set-up status create-policy create-user
+
+[group('default')]
+@build:
+   @echo ">> running $0"
+   #  pip install -r requirements.txt
+
+[group('VA301389')]
+@version:
+   @echo ">> running $0"
+   docker version
+   helm version
+   k9s version
+   kubectl version
+   minikube version
+   vault version
+
+[group('VA301389')]
+@start-minikube:
+   @echo ">> running $0"
+   minikube start
+
+[group('VA301389')]
+@deploy:
+   @echo ">> running $0"
+   minikube start
+   
+
+[group('VA301389')]
+status:
+   @echo ">> running $0"
+   vault status
+   -lsof -P -i :8200
+   vault token lookup
+
+[group('VA301389')]
+@test:
+   @echo ">> running $0"
+   @echo $VAULT_LICENSE
+   # @just _print_static_secrets
+   @kubectl exec -it vault-0 -n vault -- env 
+   @just _print_dynamic_secrets
+
+[group('VA301389')]
+@helm-set-up:
+	@helm repo add hashicorp https://helm.releases.hashicorp.com
+	@helm repo update
+	@helm search repo hashicorp/vault
+
+[group('VA301389')]
+@vault-set-up:
+   @echo ">> running $0"
+   @kubectl create ns vault
+   @sleep 10
+   @kubectl create secret generic vault-license --from-literal license=$VAULT_LICENSE -n vault
+   @helm install vault hashicorp/vault -n vault --values vault-values.yaml
+   @kubectl wait --for=jsonpath='{.status.phase}'=Running pod --all --namespace vault --timeout=1m
+   @kubectl get pods -n vault
+
+[group('VA301389')]
+@create-policy:
+   @echo ">> running $0"
+   vault policy write developer-vault-policy developer-vault-policy.hcl 
+
+[group('VA301389')]
+@create-user user=("danielle") pass=("test-pass"):
+   @echo ">> running $0"
+   vault write auth/userpass/users/{{user}} \
+        password={{pass}} \
+        policies=developer-vault-policy
+
+[group('VA301389')]
+@login-user user=("danielle") pass=("test-pass"):
+   @echo ">> running $0"
+   vault login \
+      -method=userpass \
+      -token-only username={{user}} \
+      password={{pass}}
+
+[group('VA301389')]
+@clean:
+   @echo ">> running $0"
+   minikube delete
+
+# kill-ns:
+# 	@kubectl delete ns vault app vault-secrets-operator-system demo-ns postgres
+# 	sleep 5
+
+# prep-cluster-install:
+# 	@helm repo add hashicorp https://helm.releases.hashicorp.com
+# 	@helm repo update
+# 	@helm search repo hashicorp/vault
+
+[group('VA301389')]
+install-vault-ent-cluster: helm-set-up
+   @echo ">> running $0"
+   @kubectl create ns vault
+   @sleep 10
+   @kubectl create secret generic vault-license --from-literal license=$VAULT_LICENSE -n vault
+   @helm install vault hashicorp/vault -n vault --values vault-ent/vault-values.yaml
+   @kubectl wait --for=jsonpath='{.status.phase}'=Running pod --all --namespace vault --timeout=1m
+   @kubectl get pods -n vault
+
+[group('VA301389')]
+uninstall-vault:
+   @echo ">> running $0"
+   @helm uninstall vault -n vault
+   @kubectl delete ns vault
+   @sleep 10
+
+[group('VA301389')]
+install-the-vault-secrets-operator:
+   @echo ">> running $0"
+   @helm install vault-secrets-operator hashicorp/vault-secrets-operator \
+      -n vault-secrets-operator-system \
+      --create-namespace \
+      --values vault-operator-values.yaml \
+      --version 0.8.0
+   @sleep 10
+   @kubectl wait --for=jsonpath='{.status.phase}'=Running pod \
+      --all --namespace vault-secrets-operator-system --timeout=1m
+   @kubectl wait --for=jsonpath='{.status.phase}'=Running pod --all --namespace vault-secrets-operator-system --timeout=1m
+   @sleep 10
+
+[group('VA301389')]
+uninstall-vso:
+   @echo ">> running $0"
+   @helm uninstall vault-secrets-operator -n vault-secrets-operator-system
+
+[group('VA301389')]
+prerequisites:
+   #!/usr/bin/env bash
+   @echo ">> running $0"
+   if ! command -v kubectl 2>&1 >/dev/null
+   then
+     echo "kubectl could not be found"
+     exit 1
+   fi
+   if ! command -v k9s 2>&1 >/dev/null
+   then
+      echo "k9s could not be found"
+      exit 1
+   fi
+   if ! command -v helm 2>&1 >/dev/null
+   then
+      echo "helm could not be found"
+      exit 1
+   fi
+   if ! command -v minikube 2>&1 >/dev/null
+   then
+      echo "minikube could not be found"
+      exit 1
+   fi
+
+[group('VA301389')]
+ent-prerequisites: prerequisites
+   #!/usr/bin/env bash
+   @echo ">> running $0"
+   if [ -z "${VAULT_LICENSE}" ]; then
+      echo "VAULT_LICENSE not set"
+      exit 1
+   fi

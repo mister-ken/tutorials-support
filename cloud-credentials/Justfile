@@ -1,0 +1,60 @@
+set shell := ["bash", "-c"]
+set positional-arguments
+
+vaulte := "/Users/mrken/Documents/dev/github/hashicorp/vault-enterprise/bin/vault"
+azure_plugin_loc := "/Users/mrken/Documents/dev/github/hashicorp/vault-plugin-secrets-azure/bin/vault-plugin-secrets-azure"
+sha_plugin := "54cd11cbe188a5ba2fa6df2c42cc1e4e6298363a2a1638032f49633101944801"
+default: all
+all: version build deploy config-se status test clean
+clean-all: clean
+
+[group('azure-secrets')]
+@version vault_path=vaulte:
+   echo ">> running $0"
+   {{vault_path}} version
+
+[group('azure-secrets')]
+@boot-strap: clean
+   echo ">> running $0"
+
+[group('azure-secrets')]
+@build: clean
+   echo ">> running $0"
+
+
+[group('azure-secrets')]
+@deploy vault_path=vaulte:
+   echo ">> running $0"
+   nohup {{vault_path}} server -dev -dev-root-token-id root -dev-plugin-dir="/Users/mrken/Documents/dev/github/hashicorp/vault-plugin-secrets-azure/bin/" . > /dev/null 2>&1 &
+
+[group('azure-secrets')]
+@status:
+   echo ">> running $0"
+   VAULYT_TOKEN=root && VAULT_ADDR=http://127.0.0.1:8200 vault status
+
+[group('azure-secrets')]
+@config-se:
+   @echo ">> running $0"
+   openssl dgst -sha256 {{azure_plugin_loc}}
+   vault plugin register -sha256 {{sha_plugin}} -command="vault-plugin-secrets-azure" secret azure
+   vault secrets enable -plugin-name='azure' azure
+   vault write azure/config \
+      subscription_id=$SUBSCRIPTION_ID  \
+      client_id=$CLIENT_ID \
+      client_secret=$CLIENT_SECRET \
+      tenant_id=$TENANT_ID \
+      use_microsoft_graph_api=true \
+      rotation_schedule="*/15 * * * * *" \
+      rotation_window=60
+   vault write azure/roles/edu-app ttl=1h azure_roles=roles/azure.hcl
+
+[group('azure-secrets')]
+@test:
+   echo ">> running $0"
+   echo $(openssl dgst -sha256 {{azure_plugin_loc}})
+
+
+[group('azure-secrets')]
+@clean:
+   echo ">> running $0"
+   kill -9 $(lsof -t -i :8200)
