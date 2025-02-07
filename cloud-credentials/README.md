@@ -7,10 +7,10 @@ for secrets engine:
 1. build azure SE https://github.com/hashicorp/vault-plugin-secrets-azure/pull/227
 gconb VAULT-24968/automated-root-rotation origin/VAULT-24968/automated-root-rotation
 make 
-1. follow directions from tutorial to set up [Service principal, resource group](https://developer.hashicorp.com/vault/tutorials/secrets-management/azure-secrets#create-an-azure-service-principal-and-resource-group).  Pay attention to specific permissions needed to rotate root.  Get the SUBSCRIPTION_ID, CLIENT_ID, CLIENT_SECRET, TENANT_ID for use in configuration
+1. Follow directions from tutorial to set up [Service principal, resource group](https://developer.hashicorp.com/vault/tutorials/secrets-management/azure-secrets#create-an-azure-service-principal-and-resource-group).  Except named the resource `vault-edu`. Used specific permissions needed to rotate root.  Get the SUBSCRIPTION_ID, CLIENT_ID, CLIENT_SECRET, TENANT_ID for use in configuration
 1. start custom vault ent with azure SE local
    ```
-   $ vault server -dev -dev-root-token-id root -dev-plugin-dir=".../dev/github/hashicorp/vault-plugin-secrets-azure/bin/"
+   $ vault server -dev -dev-root-token-id root -dev-plugin-dir=".../dev/github/hashicorp/ vault-plugin-secrets-azure/bin/" -log-level=debug
    ```
    Note if the following is displayed during vault start up:
    ```
@@ -19,16 +19,16 @@ make
    ```
 1. config Azure SE
    ```
-   $openssl dgst -sha256 /Users/mrken/Documents/dev/github/hashicorp/vault-plugin-secrets-azure/bin/vault-plugin-secrets-azure
-   $vault plugin register -sha256 e3782... -command="vault-plugin-secrets-azure" secret azure
+   $ openssl dgst -sha256 /Users/mrken/Documents/dev/github/hashicorp/vault-plugin-secrets-azure/bin/vault-plugin-secrets-azure
+   $ vault plugin register -sha256 e3782... -command="vault-plugin-secrets-azure" secret azure
    Success! Registered plugin: azure
    ```
 
    ```
-   vault secrets enable -plugin-name='azure' azure
+   $ vault secrets enable -plugin-name='azure' azure
    Success! Enabled the azure secrets engine at: azure/
 
-   vault write azure/config \
+   $ vault write azure/config \
       subscription_id=$SUBSCRIPTION_ID  \
       client_id=$CLIENT_ID \
       client_secret=$CLIENT_SECRET \
@@ -50,3 +50,10 @@ make
 1. Verify in the vault DEBUG log that the creds are changing
 1. Disable the rotation and clean up
 
+Test
+vault read azure/creds/edu-app
+vault write -f azure/rotate-root
+
+Reregister
+vault write azure/config \     
+    disable_automated_rotation=true
