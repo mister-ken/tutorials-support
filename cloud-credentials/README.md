@@ -1,6 +1,12 @@
 Existing tutorial:
 https://developer.hashicorp.com/vault/tutorials/secrets-management/azure-secrets
 
+
+
+Kay Craig
+  11:48 AM
+hey ken, we're talking about disallowing setting seconds in our scheduling, since it causes issues with some plugins that are built with the expectation things will never change that fast (at least over longer spans of time), which would result in mooting my above comment, and removing a column from the cron schedule string
+
 for secrets engine:
 
 1. build Vault Ent after commit: https://github.com/hashicorp/vault-enterprise/commit/2331921fdc37e8b4e36891ef93f6e921e6750869
@@ -37,6 +43,9 @@ make
       rotation_schedule="*/15 * * * * *" \
       rotation_window=60
    ```
+
+   The */15 column above is likely to be removed.  
+
    ```
    vault write azure/roles/edu-app ttl=1h azure_roles=-<<EOF
       [
